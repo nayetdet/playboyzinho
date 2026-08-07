@@ -1,0 +1,40 @@
+{
+  "name": "workspace",
+
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": ".",
+		"args": {
+			"FEDORA_COMPAT" : "1" // enables fedora compatibility mode (extra dialout group with gid 18)
+		}
+	},
+
+  "mounts": [
+    "source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind",
+    "source=/dev/,target=/dev/,type=bind,consistency=consistent"
+  ],
+
+  "runArgs": [
+    "--privileged",
+    "--security-opt=label=disable"
+  ],
+  
+  "postAttachCommand": "sudo service udev restart || true",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "platformio.platformio-ide",
+        "ms-vscode.cpptools"
+      ]
+    }
+  },
+
+  "remoteEnv": {
+    "PLATFORMIO_CORE_DIR": "/home/vscode/.platformio"
+  }
+}
