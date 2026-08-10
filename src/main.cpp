@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include <driver/i2s.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
 
@@ -8,6 +9,15 @@
 
 #define TFT_SCK  18
 #define TFT_MOSI 23
+
+// MAX98357A: ESP32 -> BCLK, LRC/WS e DIN.
+// GND e VIN do modulo tambem precisam estar ligados ao ESP32.
+#define I2S_BCLK 26
+#define I2S_LRC  25
+#define I2S_DIN  22
+
+constexpr i2s_port_t AUDIO_PORT = I2S_NUM_0;
+constexpr uint32_t AUDIO_SAMPLE_RATE = 22050;
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(
   TFT_CS,
@@ -30,6 +40,81 @@ constexpr float ZOOM_CENTER_IMAGINARY = 0.1318259f;
 constexpr float ZOOM_VIEW_WIDTH = 0.035f;
 
 uint32_t animationFrame = 0;
+
+struct Note {
+  uint16_t frequency;
+  uint16_t durationMs;
+};
+
+// Uma pequena melodia original, em Dó maior, que fica repetindo.
+const Note MELODY[] = {
+  {262, 180}, {294, 180}, {330, 180}, {392, 360},
+  {330, 180}, {294, 180}, {262, 360}, {0,   120},
+  {262, 180}, {330, 180}, {392, 180}, {523, 360},
+  {392, 180}, {330, 180}, {294, 360}, {0,   240}
+};
+
+void audioTask(void *) {
+  constexpr size_t SAMPLES_PER_BUFFER = 256;
+  int16_t samples[SAMPLES_PER_BUFFER * 2];
+  size_t noteIndex = 0;
+  uint32_t noteEnd = 0;
+  uint16_t frequency = 0;
+  uint32_t phase = 0;
+
+  for (;;) {
+    const uint32_t now = millis();
+    if (now >= noteEnd) {
+      const Note &note = MELODY[noteIndex];
+      frequency = note.frequency;
+      noteEnd = now + note.durationMs;
+      noteIndex = (noteIndex + 1) % (sizeof(MELODY) / sizeof(MELODY[0]));
+    }
+
+    for (size_t i = 0; i < SAMPLES_PER_BUFFER; ++i) {
+      int16_t value = 0;
+      if (frequency != 0) {
+        // Onda quadrada simples, com volume baixo para o alto-falante de 3 W.
+        phase += static_cast<uint32_t>(
+          (static_cast<uint64_t>(frequency) << 32) / AUDIO_SAMPLE_RATE
+        );
+        value = (phase & 0x80000000UL) ? 5000 : -5000;
+      }
+      samples[i * 2] = value;
+      samples[i * 2 + 1] = value;
+    }
+
+    size_t bytesWritten = 0;
+    i2s_write(AUDIO_PORT, samples, sizeof(samples), &bytesWritten, portMAX_DELAY);
+  }
+}
+
+void setupAudio() {
+  const i2s_config_t config = {
+    .mode = static_cast<i2s_mode_t>(I2S_MODE_MASTER | I2S_MODE_TX),
+    .sample_rate = AUDIO_SAMPLE_RATE,
+    .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
+    .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+    .communication_format = I2S_COMM_FORMAT_I2S_MSB,
+    .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+    .dma_buf_count = 8,
+    .dma_buf_len = 256,
+    .use_apll = false,
+    .tx_desc_auto_clear = true,
+    .fixed_mclk = 0
+  };
+  const i2s_pin_config_t pins = {
+    .bck_io_num = I2S_BCLK,
+    .ws_io_num = I2S_LRC,
+    .data_out_num = I2S_DIN,
+    .data_in_num = I2S_PIN_NO_CHANGE
+  };
+
+  i2s_driver_install(AUDIO_PORT, &config, 0, nullptr);
+  i2s_set_pin(AUDIO_PORT, &pins);
+  i2s_zero_dma_buffer(AUDIO_PORT);
+  xTaskCreatePinnedToCore(audioTask, "audio", 4096, nullptr, 1, nullptr, 0);
+}
 
 // Paleta classica do Mandelbrot, do marrom ao azul e ao dourado.
 const uint8_t PALETTE[][3] = {
@@ -109,6 +194,8 @@ void drawMandelbrot(float centerReal, float centerImaginary,
 
 void setup() {
   Serial.begin(115200);
+
+  setupAudio();
 
   // Inicializa o SPI usando os pinos escolhidos
   SPI.begin(
