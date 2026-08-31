@@ -1,7 +1,7 @@
 .PHONY: run build upload monitor reset clean
 
 BAUD_RATE ?= 115200
-PORT ?= /dev/ttyUSB0
+PORT ?= /dev/ttyACM1
 
 run: upload monitor
 
