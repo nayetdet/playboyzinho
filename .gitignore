@@ -1,2 +1,16 @@
 .pio
 .vscode/
+
+# KiCad - Arquivos temporários, backups e relatórios
+*.tmp
+*.bak
+*-bak
+*-backups/
+*_old
+*.kicad_prl
+*.lck
+*.log
+
+# Arquivos de fabricação/saída (opcional: remova se quiser guardar Gerber/PDFs no Git)
+/gerber/
+/*.pdf
