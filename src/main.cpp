@@ -30,16 +30,17 @@ constexpr size_t FRAME_PIXELS = SCREEN_WIDTH * SCREEN_HEIGHT;
 constexpr size_t FRAME_BYTES = FRAME_PIXELS * sizeof(uint16_t);
 constexpr uint32_t FRAME_INTERVAL_MS = 1000 / VIDEO_FPS;
 constexpr char AUDIO_PATH[] = "/audio.pcm";
-constexpr uint32_t AUDIO_SAMPLE_RATE = 22050;
-// Fica global (na RAM), portanto pode cobrir com folga o tempo em que a TFT
-// monopoliza o SPI para enviar um frame inteiro.
-constexpr size_t AUDIO_BUFFER_BYTES = 8192;
+// 16 kHz estéreo cabe integralmente na PSRAM de 8 MB. Isso remove qualquer
+// leitura do SD durante a reprodução de áudio.
+constexpr uint32_t AUDIO_SAMPLE_RATE = 16000;
+constexpr size_t AUDIO_CHUNK_BYTES = 16384;
 
 Adafruit_ILI9341 tft(TFT_CS, TFT_DC, TFT_RST);
 File videoFile;
 File audioFile;
 uint16_t *frameBuffer = nullptr;
-uint8_t audioBuffer[AUDIO_BUFFER_BYTES];
+uint8_t *audioData = nullptr;
+size_t audioBytes = 0;
 SemaphoreHandle_t sdMutex = nullptr;
 uint32_t renderedFrames = 0;
 uint32_t nextFrameAt = 0;
@@ -71,7 +72,11 @@ bool initDisplayAndSd() {
   bool sdReady = false;
   for (uint8_t attempt = 0; attempt < 3 && !sdReady; ++attempt) {
     delay(250);
-    sdReady = SD.begin(SD_CS, SPI, 20000000);
+    sdReady = SD.begin(SD_CS, SPI, 40000000);
+    if (!sdReady) {
+      SD.end();
+      sdReady = SD.begin(SD_CS, SPI, 20000000);
+    }
     if (!sdReady) SD.end();
   }
   if (!sdReady) {
@@ -106,6 +111,36 @@ bool initDisplayAndSd() {
     return false;
   }
 
+  audioBytes = audioFile.size();
+  if (audioBytes == 0 || audioBytes > 7 * 1024 * 1024) {
+    showError("Audio grande demais");
+    videoFile.close();
+    audioFile.close();
+    return false;
+  }
+  audioData = static_cast<uint8_t *>(
+      heap_caps_malloc(audioBytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+  if (!audioData) {
+    showError("Sem memoria para audio");
+    videoFile.close();
+    audioFile.close();
+    return false;
+  }
+
+  size_t loaded = 0;
+  while (loaded < audioBytes) {
+    const size_t received = audioFile.read(audioData + loaded,
+                                           audioBytes - loaded);
+    if (received == 0) {
+      showError("Falha ao ler audio");
+      videoFile.close();
+      audioFile.close();
+      return false;
+    }
+    loaded += received;
+  }
+  audioFile.close();
+
   Serial.printf("Abrindo %s: %lu frames (%lu bytes).\n", VIDEO_PATH,
                 static_cast<unsigned long>(videoFile.size() / FRAME_BYTES),
                 static_cast<unsigned long>(videoFile.size()));
@@ -113,26 +148,20 @@ bool initDisplayAndSd() {
 }
 
 void audioTask(void *) {
-  // PCM estéreo, 16-bit little-endian, exatamente como gerado pelo FFmpeg.
+  // PCM estéreo, 16-bit little-endian, inteiramente residente na PSRAM.
+  size_t offset = 0;
   for (;;) {
     if (!audioPlaying) {
       vTaskDelay(pdMS_TO_TICKS(20));
       continue;
     }
-    xSemaphoreTake(sdMutex, portMAX_DELAY);
-    const size_t bytesRead = audioFile.read(audioBuffer, sizeof(audioBuffer));
-    xSemaphoreGive(sdMutex);
 
-    if (bytesRead == 0) {
-      // Repete somente se o fluxo ainda estiver ativo e acabar antes do vídeo.
-      xSemaphoreTake(sdMutex, portMAX_DELAY);
-      audioFile.seek(0);
-      xSemaphoreGive(sdMutex);
-      continue;
-    }
-
+    const size_t bytesToWrite = min(AUDIO_CHUNK_BYTES, audioBytes - offset);
     size_t written = 0;
-    i2s_write(I2S_NUM_0, audioBuffer, bytesRead, &written, portMAX_DELAY);
+    i2s_write(I2S_NUM_0, audioData + offset, bytesToWrite, &written,
+              portMAX_DELAY);
+    offset += written;
+    if (offset >= audioBytes) offset = 0;
   }
 }
 
@@ -164,9 +193,8 @@ bool initAudio() {
       .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
       .communication_format = I2S_COMM_FORMAT_STAND_I2S,
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-      // 12 * 512 frames estéreo = ~279 ms de reserva contra leituras do SD
-      // atrasadas pelo envio do frame RGB565 à tela.
-      .dma_buf_count = 12,
+      // 32 * 512 frames estéreo = ~1,0 s de reserva adicional no DMA.
+      .dma_buf_count = 32,
       .dma_buf_len = 512,
       .use_apll = false,
       .tx_desc_auto_clear = true,
@@ -184,7 +212,7 @@ bool initAudio() {
   }
   i2s_zero_dma_buffer(I2S_NUM_0);
   playStartupTone();
-  xTaskCreatePinnedToCore(audioTask, "audio", 4096, nullptr, 2, nullptr, 0);
+  xTaskCreatePinnedToCore(audioTask, "audio", 4096, nullptr, 5, nullptr, 0);
   return true;
 }
 

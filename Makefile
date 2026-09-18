@@ -1,7 +1,7 @@
-.PHONY: run build upload monitor reset clean
+.PHONY: run build upload monitor reset clean preprocess-video
 
 BAUD_RATE ?= 115200
-PORT ?= /dev/ttyACM1
+PORT ?=
 
 run: upload monitor
 
@@ -12,7 +12,11 @@ upload:
 	pio run -t upload
 
 monitor:
-	pio device monitor -b $(BAUD_RATE) -p $(PORT)
+	@if [ -n "$(PORT)" ]; then \
+		pio device monitor -b $(BAUD_RATE) -p $(PORT); \
+	else \
+		pio device monitor -b $(BAUD_RATE); \
+	fi
 
 reset:
 	pio run -t reset
@@ -20,3 +24,6 @@ reset:
 
 clean:
 	pio run -t clean
+
+preprocess-video:
+	bash tools/preprocess_video.sh video.webm video.rgb565 audio.pcm

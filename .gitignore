@@ -14,3 +14,8 @@
 # Arquivos de fabricação/saída (opcional: remova se quiser guardar Gerber/PDFs no Git)
 /gerber/
 /*.pdf
+
+# Mídia gerada/local; não enviar binários grandes ao GitHub
+/video.webm
+/video.rgb565
+/audio.pcm
