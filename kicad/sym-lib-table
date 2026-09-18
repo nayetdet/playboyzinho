@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "lib-do-playboy")(type "KiCad")(uri "${KIPRJMOD}/lib-do-playboy.kicad_sym")(options "")(descr "Símbolos do playboyzinho"))
+)
