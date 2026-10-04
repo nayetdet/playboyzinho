@@ -28,7 +28,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "lib-do-playboy:(carregador) TP4056"
 			(at 0 0 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -228,7 +228,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "lib-do-playboy:(dc dc) MT3608"
 			(at 0 0 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -384,7 +384,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Package_DFN_QFN:TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm"
+		(property "Footprint" "lib-do-playboy:(amplificador) MAX98357_Module"
 			(at 5.08 -21.336 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -606,7 +606,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "lib-do-playboy:indicador-bateria"
 			(at 0 0 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -894,7 +894,7 @@
 				)
 			)
 		)
-		(property "Footprint" "RF_Module:ESP32-S3-WROOM-1"
+		(property "Footprint" "lib-do-playboy:esp32-s3"
 			(at -25.654 -31.75 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1800,7 +1800,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "lib-do-playboy:tela TFT 2.8"
 			(at 0 0 0)
 			(show_name no)
 			(do_not_autoplace no)
