@@ -92,9 +92,9 @@
 				)
 			)
 			(pin passive line
-				(at -16.51 5.08 0)
+				(at 16.51 5.08 180)
 				(length 2.54)
-				(name "IN+"
+				(name "OUT+"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -110,9 +110,9 @@
 				)
 			)
 			(pin passive line
-				(at -16.51 -5.08 0)
+				(at 16.51 1.27 180)
 				(length 2.54)
-				(name "IN-"
+				(name "B+"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -146,9 +146,9 @@
 				)
 			)
 			(pin passive line
-				(at 16.51 1.27 180)
+				(at 16.51 -6.35 180)
 				(length 2.54)
-				(name "B+"
+				(name "OUT-"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -164,9 +164,9 @@
 				)
 			)
 			(pin passive line
-				(at 16.51 -6.35 180)
+				(at -16.51 5.08 0)
 				(length 2.54)
-				(name "OUT-"
+				(name "IN+"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -182,9 +182,9 @@
 				)
 			)
 			(pin passive line
-				(at 16.51 5.08 180)
+				(at -16.51 -5.08 0)
 				(length 2.54)
-				(name "OUT+"
+				(name "IN-"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -283,10 +283,10 @@
 					)
 				)
 			)
-			(pin passive line
+			(pin power_out line
 				(at -15.24 3.81 0)
 				(length 2.54)
-				(name "VIN+"
+				(name "VOUT+"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -301,10 +301,10 @@
 					)
 				)
 			)
-			(pin passive line
+			(pin power_out line
 				(at -15.24 -3.81 0)
 				(length 2.54)
-				(name "VIN-"
+				(name "VOUT-"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -319,10 +319,10 @@
 					)
 				)
 			)
-			(pin passive line
-				(at 15.24 -3.81 180)
+			(pin power_in line
+				(at 15.24 3.81 180)
 				(length 2.54)
-				(name "VOUT-"
+				(name "VIN+"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -337,10 +337,10 @@
 					)
 				)
 			)
-			(pin passive line
-				(at 15.24 3.81 180)
+			(pin power_in line
+				(at 15.24 -3.81 180)
 				(length 2.54)
-				(name "VOUT+"
+				(name "VIN-"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -653,7 +653,7 @@
 			)
 			(polyline
 				(pts
-					(xy -3.81 2.54) (xy -3.81 -2.54) (xy -2.54 -2.54) (xy -2.54 2.54) (xy -3.81 2.54)
+					(xy -2.54 2.54) (xy -2.54 -2.54) (xy -1.27 -2.54) (xy -1.27 2.54) (xy -2.54 2.54)
 				)
 				(stroke
 					(width 0)
@@ -665,7 +665,7 @@
 			)
 			(polyline
 				(pts
-					(xy -1.27 2.54) (xy -1.27 -2.54) (xy 0 -2.54) (xy 0 2.54) (xy -1.27 2.54)
+					(xy 0 2.54) (xy 0 -2.54) (xy 1.27 -2.54) (xy 1.27 2.54) (xy 0 2.54)
 				)
 				(stroke
 					(width 0)
@@ -677,7 +677,7 @@
 			)
 			(polyline
 				(pts
-					(xy 1.27 2.54) (xy 1.27 -2.54) (xy 2.54 -2.54) (xy 2.54 2.54) (xy 1.27 2.54)
+					(xy 2.54 2.54) (xy 2.54 -2.54) (xy 3.81 -2.54) (xy 3.81 2.54) (xy 2.54 2.54)
 				)
 				(stroke
 					(width 0)
@@ -689,7 +689,7 @@
 			)
 			(polyline
 				(pts
-					(xy 3.81 2.54) (xy 3.81 -2.54) (xy 5.08 -2.54) (xy 5.08 2.54) (xy 3.81 2.54)
+					(xy 5.08 2.54) (xy 5.08 -2.54) (xy 6.35 -2.54) (xy 6.35 2.54) (xy 5.08 2.54)
 				)
 				(stroke
 					(width 0)
@@ -709,10 +709,10 @@
 					)
 				)
 			)
-			(pin passive line
+			(pin power_in line
 				(at -11.43 2.54 0)
 				(length 2.54)
-				(name "+"
+				(name "BAT+"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -727,10 +727,130 @@
 					)
 				)
 			)
-			(pin passive line
+			(pin power_in line
 				(at -11.43 -2.54 0)
 				(length 2.54)
-				(name "-"
+				(name "BAT-"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "2"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+		)
+		(embedded_fonts no)
+	)
+	(symbol "bateria"
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(duplicate_pin_numbers_are_jumpers no)
+		(property "Reference" "U"
+			(at 0 6.604 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(symbol "bateria_0_1"
+			(rectangle
+				(start -5.08 3.81)
+				(end 5.08 -3.81)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+		)
+		(symbol "bateria_1_1"
+			(text "bateria"
+				(at -2.032 4.826 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(pin power_out line
+				(at -7.62 2.54 0)
+				(length 2.54)
+				(name "BAT+"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "1"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin power_out line
+				(at -7.62 -2.54 0)
+				(length 2.54)
+				(name "BAT-"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -786,7 +906,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf"
-			(at -7.112 -42.164 0)
+			(at 3.81 -39.116 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(hide yes)
@@ -797,7 +917,7 @@
 			)
 		)
 		(property "Description" "RF Module, ESP32-S3 SoC, Wi-Fi 802.11b/g/n, Bluetooth, BLE, 32-bit, 3.3V, onboard antenna, SMD"
-			(at -6.35 -39.116 0)
+			(at 1.524 -36.322 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(hide yes)
@@ -856,24 +976,6 @@
 				(effects
 					(font
 						(size 1.27 1.27)
-					)
-				)
-			)
-			(pin bidirectional line
-				(at -15.24 -21.59 0)
-				(length 2.54)
-				(name "GPIO14"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "0"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
 					)
 				)
 			)
@@ -1111,7 +1213,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin input line
 				(at -15.24 -6.35 0)
 				(length 2.54)
 				(name "GPIO46"
@@ -1219,7 +1321,25 @@
 					)
 				)
 			)
-			(pin power_out line
+			(pin bidirectional line
+				(at -15.24 -21.59 0)
+				(length 2.54)
+				(name "GPIO14"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "20"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin power_in line
 				(at -15.24 -24.13 0)
 				(length 2.54)
 				(name "5V"
@@ -1273,7 +1393,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin output line
 				(at 15.24 24.13 180)
 				(length 2.54)
 				(name "TXD0"
@@ -1291,7 +1411,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin output line
 				(at 15.24 21.59 180)
 				(length 2.54)
 				(name "RXD0"
@@ -1825,7 +1945,7 @@
 					)
 				)
 			)
-			(pin output line
+			(pin tri_state line
 				(at -21.59 3.81 0)
 				(length 2.54)
 				(name "SDO-(MISO)"
@@ -2023,7 +2143,7 @@
 					)
 				)
 			)
-			(pin output line
+			(pin tri_state line
 				(at 21.59 3.81 180)
 				(length 2.54)
 				(name "SD_MISO"
