@@ -145,7 +145,7 @@
 					)
 				)
 			)
-			(pin power_out line
+			(pin passive line
 				(at 16.51 -6.35 180)
 				(length 2.54)
 				(name "OUT-"
@@ -301,7 +301,7 @@
 					)
 				)
 			)
-			(pin power_out line
+			(pin passive line
 				(at -15.24 -3.81 0)
 				(length 2.54)
 				(name "VOUT-"
@@ -337,7 +337,7 @@
 					)
 				)
 			)
-			(pin power_in line
+			(pin passive line
 				(at 15.24 -3.81 180)
 				(length 2.54)
 				(name "VIN-"
@@ -541,7 +541,7 @@
 					)
 				)
 			)
-			(pin input line
+			(pin passive line
 				(at -12.7 -6.35 0)
 				(length 2.54)
 				(name "GND"
@@ -559,7 +559,7 @@
 					)
 				)
 			)
-			(pin input line
+			(pin power_in line
 				(at 12.7 5.08 180)
 				(length 2.54)
 				(name "VIN"
@@ -570,174 +570,6 @@
 					)
 				)
 				(number "7"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-		)
-		(embedded_fonts no)
-	)
-	(symbol "Indicador-Bateria"
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(duplicate_pin_numbers_are_jumpers no)
-		(property "Reference" "U"
-			(at 0 8.128 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" ""
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "lib-do-playboy:indicador-bateria"
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(symbol "Indicador-Bateria_0_1"
-			(rectangle
-				(start -8.89 4.445)
-				(end 8.89 -4.445)
-				(stroke
-					(width 0)
-					(type default)
-				)
-				(fill
-					(type none)
-				)
-			)
-			(polyline
-				(pts
-					(xy -2.54 2.54) (xy -2.54 -2.54) (xy -1.27 -2.54) (xy -1.27 2.54) (xy -2.54 2.54)
-				)
-				(stroke
-					(width 0)
-					(type default)
-				)
-				(fill
-					(type none)
-				)
-			)
-			(polyline
-				(pts
-					(xy 0 2.54) (xy 0 -2.54) (xy 1.27 -2.54) (xy 1.27 2.54) (xy 0 2.54)
-				)
-				(stroke
-					(width 0)
-					(type default)
-				)
-				(fill
-					(type none)
-				)
-			)
-			(polyline
-				(pts
-					(xy 2.54 2.54) (xy 2.54 -2.54) (xy 3.81 -2.54) (xy 3.81 2.54) (xy 2.54 2.54)
-				)
-				(stroke
-					(width 0)
-					(type default)
-				)
-				(fill
-					(type none)
-				)
-			)
-			(polyline
-				(pts
-					(xy 5.08 2.54) (xy 5.08 -2.54) (xy 6.35 -2.54) (xy 6.35 2.54) (xy 5.08 2.54)
-				)
-				(stroke
-					(width 0)
-					(type default)
-				)
-				(fill
-					(type none)
-				)
-			)
-		)
-		(symbol "Indicador-Bateria_1_1"
-			(text "Indicador de carga"
-				(at -0.254 5.842 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(pin power_in line
-				(at -11.43 2.54 0)
-				(length 2.54)
-				(name "BAT+"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "1"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(pin power_in line
-				(at -11.43 -2.54 0)
-				(length 2.54)
-				(name "BAT-"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "2"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -774,7 +606,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "lib-do-playboy:bateria"
 			(at 0 0 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1357,7 +1189,7 @@
 					)
 				)
 			)
-			(pin power_in line
+			(pin passive line
 				(at -15.24 -26.67 0)
 				(length 2.54)
 				(name "GND"
@@ -1375,7 +1207,7 @@
 					)
 				)
 			)
-			(pin power_in line
+			(pin passive line
 				(at 15.24 26.67 180)
 				(length 2.54)
 				(name "GND"
@@ -1735,7 +1567,7 @@
 					)
 				)
 			)
-			(pin power_in line
+			(pin passive line
 				(at 15.24 -24.13 180)
 				(length 2.54)
 				(name "GND"
@@ -1753,7 +1585,7 @@
 					)
 				)
 			)
-			(pin power_in line
+			(pin passive line
 				(at 15.24 -26.67 180)
 				(length 2.54)
 				(name "GND"
@@ -1764,6 +1596,174 @@
 					)
 				)
 				(number "44"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+		)
+		(embedded_fonts no)
+	)
+	(symbol "indicador-bateria"
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(duplicate_pin_numbers_are_jumpers no)
+		(property "Reference" "U"
+			(at 0 8.128 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "lib-do-playboy:indicador-bateria"
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(symbol "indicador-bateria_0_1"
+			(rectangle
+				(start -8.89 4.445)
+				(end 8.89 -4.445)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy -2.54 2.54) (xy -2.54 -2.54) (xy -1.27 -2.54) (xy -1.27 2.54) (xy -2.54 2.54)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy 0 2.54) (xy 0 -2.54) (xy 1.27 -2.54) (xy 1.27 2.54) (xy 0 2.54)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy 2.54 2.54) (xy 2.54 -2.54) (xy 3.81 -2.54) (xy 3.81 2.54) (xy 2.54 2.54)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy 5.08 2.54) (xy 5.08 -2.54) (xy 6.35 -2.54) (xy 6.35 2.54) (xy 5.08 2.54)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+		)
+		(symbol "indicador-bateria_1_1"
+			(text "Indicador de carga"
+				(at -0.254 5.842 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(pin power_in line
+				(at -11.43 2.54 0)
+				(length 2.54)
+				(name "BAT+"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "1"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at -11.43 -2.54 0)
+				(length 2.54)
+				(name "BAT-"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "2"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1855,10 +1855,10 @@
 					)
 				)
 			)
-			(pin output line
+			(pin power_in line
 				(at -21.59 16.51 0)
 				(length 2.54)
-				(name "T_IRQ"
+				(name "VCC"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1873,10 +1873,10 @@
 					)
 				)
 			)
-			(pin output line
+			(pin power_in line
 				(at -21.59 13.97 0)
 				(length 2.54)
-				(name "T_DO"
+				(name "GND"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1894,7 +1894,7 @@
 			(pin input line
 				(at -21.59 11.43 0)
 				(length 2.54)
-				(name "T_DIN"
+				(name "CS"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1912,7 +1912,7 @@
 			(pin input line
 				(at -21.59 8.89 0)
 				(length 2.54)
-				(name "T_CS"
+				(name "RESET"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1930,7 +1930,7 @@
 			(pin input line
 				(at -21.59 6.35 0)
 				(length 2.54)
-				(name "T_CLK"
+				(name "DC"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1945,10 +1945,10 @@
 					)
 				)
 			)
-			(pin tri_state line
+			(pin input line
 				(at -21.59 3.81 0)
 				(length 2.54)
-				(name "SDO-(MISO)"
+				(name "SDI-(MOSI)"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1963,10 +1963,10 @@
 					)
 				)
 			)
-			(pin power_in line
+			(pin input line
 				(at -21.59 1.27 0)
 				(length 2.54)
-				(name "LED"
+				(name "SCK"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1981,10 +1981,10 @@
 					)
 				)
 			)
-			(pin input line
+			(pin power_in line
 				(at -21.59 -1.27 0)
 				(length 2.54)
-				(name "SCK"
+				(name "LED"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -1999,10 +1999,10 @@
 					)
 				)
 			)
-			(pin input line
+			(pin tri_state line
 				(at -21.59 -3.81 0)
 				(length 2.54)
-				(name "SDI-(MOSI)"
+				(name "SDO-(MISO)"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -2020,7 +2020,7 @@
 			(pin input line
 				(at -21.59 -6.35 0)
 				(length 2.54)
-				(name "DC"
+				(name "T_CLK"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -2038,7 +2038,7 @@
 			(pin input line
 				(at -21.59 -8.89 0)
 				(length 2.54)
-				(name "RESET"
+				(name "T_CS"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -2056,7 +2056,7 @@
 			(pin input line
 				(at -21.59 -11.43 0)
 				(length 2.54)
-				(name "CS"
+				(name "T_DIN"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -2071,10 +2071,10 @@
 					)
 				)
 			)
-			(pin power_in line
+			(pin output line
 				(at -21.59 -13.97 0)
 				(length 2.54)
-				(name "GND"
+				(name "T_DO"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -2089,10 +2089,10 @@
 					)
 				)
 			)
-			(pin power_in line
+			(pin output line
 				(at -21.59 -16.51 0)
 				(length 2.54)
-				(name "VCC"
+				(name "T_IRQ"
 					(effects
 						(font
 							(size 1.27 1.27)
