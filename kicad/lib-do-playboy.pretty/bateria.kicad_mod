@@ -7,7 +7,7 @@
 		(at -0.5 -4 0)
 		(unlocked yes)
 		(layer "F.SilkS")
-		(uuid "52e8eded-5d68-4766-978c-910c2c31ce09")
+		(uuid "57182006-c6e3-4400-bd4b-abe2c0bfbe36")
 		(effects
 			(font
 				(size 1 1)
@@ -16,10 +16,10 @@
 		)
 	)
 	(property "Value" "bateria"
-		(at 14 15.5 0)
+		(at 10 5 0)
 		(unlocked yes)
 		(layer "F.Fab")
-		(uuid "a7ae75a3-038d-4c3d-ba66-aeefc6d3b889")
+		(uuid "d590a8d1-cbd0-4515-9b4a-329e0c090982")
 		(effects
 			(font
 				(size 1 1)
@@ -32,7 +32,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "e07aae9a-e8e1-4d2f-9d52-8071e85c3a99")
+		(uuid "4677f004-a8a5-4e22-8dcd-e7228044113d")
 		(effects
 			(font
 				(size 1 1)
@@ -45,7 +45,7 @@
 		(unlocked yes)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "6e7f84f9-003d-47ef-b96f-75d7494e118b")
+		(uuid "4105a447-bdd1-4014-a188-479140b45a98")
 		(effects
 			(font
 				(size 1 1)
@@ -57,42 +57,68 @@
 	(duplicate_pad_numbers_are_jumpers no)
 	(fp_rect
 		(start -2 -2.5)
-		(end 31 48.5)
+		(end 23 22.5)
 		(stroke
 			(width 0.1)
-			(type default)
+			(type solid)
 		)
 		(fill no)
 		(layer "F.SilkS")
-		(uuid "ee67f075-c7af-40f9-92fd-e36ce2c80c6f")
+		(uuid "9334fe27-d7dc-4114-9619-262a1db594be")
 	)
 	(fp_rect
 		(start -2.5 -3)
-		(end 31.5 49)
+		(end 23.5 23)
 		(stroke
 			(width 0.05)
 			(type default)
 		)
 		(fill no)
 		(layer "F.CrtYd")
-		(uuid "95ba372f-0e79-4ea8-9e55-04096ecbc7fc")
+		(uuid "4043ff17-4644-4f0b-ae5e-3a9ceff9927e")
 	)
 	(fp_rect
 		(start -2 -2.5)
-		(end 31 48.5)
+		(end 23 22.5)
 		(stroke
 			(width 0.1)
-			(type default)
+			(type solid)
 		)
 		(fill no)
 		(layer "F.Fab")
-		(uuid "f4ec8d50-ca42-4b57-9bae-b1e7dee0190c")
+		(uuid "c911a0f3-c019-4528-9ea0-e721deb0e6ae")
 	)
-	(fp_text user "bateria"
-		(at 9.5 23 0)
+	(fp_text user "+"
+		(at -1.5 3.5 0)
 		(unlocked yes)
 		(layer "F.SilkS")
-		(uuid "7df4d6a7-7cc8-4dac-a208-69a4c67de008")
+		(uuid "080006aa-bd3f-4097-8026-c51deb9ae7dc")
+		(effects
+			(font
+				(size 2 2)
+				(thickness 0.1)
+			)
+			(justify left bottom)
+		)
+	)
+	(fp_text user "-"
+		(at 5.5 3.5 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "66690884-2dd0-4a9d-9dc4-f2b9c4c88a9d")
+		(effects
+			(font
+				(size 2 2)
+				(thickness 0.1)
+			)
+			(justify left bottom)
+		)
+	)
+	(fp_text user "bateria"
+		(at 5.5 11 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "9a939de5-84a0-4cd9-9f94-545db8ac0ef9")
 		(effects
 			(font
 				(size 2 2)
@@ -102,10 +128,10 @@
 		)
 	)
 	(fp_text user "${REFERENCE}"
-		(at 14 17 0)
+		(at 10 6.5 0)
 		(unlocked yes)
 		(layer "F.Fab")
-		(uuid "5f9d9926-45da-4046-9fc1-d123972393f6")
+		(uuid "cdb57b8c-7dab-4cad-aa55-61d2d595a920")
 		(effects
 			(font
 				(size 1 1)
@@ -120,7 +146,7 @@
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(roundrect_rratio 0.15)
-		(uuid "d343f955-aa84-4545-96ab-5d5e12a40468")
+		(uuid "70d38797-e781-462e-bb08-17cba40d7f45")
 	)
 	(pad "2" thru_hole circle
 		(at 7 0)
@@ -128,7 +154,7 @@
 		(drill 1.2)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
-		(uuid "3c9389d7-2928-4720-b8ff-e923c6095923")
+		(uuid "b37f919e-ed66-4a8b-a240-1eefe8126a5d")
 	)
 	(embedded_fonts no)
 )
