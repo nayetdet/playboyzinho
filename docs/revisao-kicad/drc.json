@@ -1,0 +1,74 @@
+{
+    "$schema": "https://schemas.kicad.org/drc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-10-19T11:37:11",
+    "ignored_checks": [
+        {
+            "description": "Footprint has no courtyard defined",
+            "key": "missing_courtyard"
+        },
+        {
+            "description": "Track endpoint not centered on via",
+            "key": "track_not_centered_on_via"
+        },
+        {
+            "description": "Tuning profile track geometries",
+            "key": "tuning_profile_track_geometries"
+        },
+        {
+            "description": "Footprint doesn't match symbol's footprint filters",
+            "key": "footprint_filters_mismatch"
+        },
+        {
+            "description": "Footprint component type doesn't match footprint pads",
+            "key": "footprint_type_mismatch"
+        }
+    ],
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "10.0.7",
+    "schematic_parity": [
+        {
+            "description": "Faltando footprint LS1 ((Speaker) 8R 1W)",
+            "items": [],
+            "severity": "warning",
+            "type": "missing_footprint"
+        },
+        {
+            "description": "Nenhuma ilha encontrada para o pino 5 no esquemático",
+            "items": [
+                {
+                    "description": "Footprint U5",
+                    "pos": {
+                        "x": 97.0385,
+                        "y": 77.0
+                    },
+                    "uuid": "6d36c075-9cc7-4ed9-a584-02826f60e36a"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        },
+        {
+            "description": "Nenhuma ilha encontrada para o pino 6 no esquemático",
+            "items": [
+                {
+                    "description": "Footprint U5",
+                    "pos": {
+                        "x": 97.0385,
+                        "y": 77.0
+                    },
+                    "uuid": "6d36c075-9cc7-4ed9-a584-02826f60e36a"
+                }
+            ],
+            "severity": "warning",
+            "type": "net_conflict"
+        }
+    ],
+    "source": "playboyzinho.kicad_pcb",
+    "unconnected_items": [],
+    "violations": []
+}
