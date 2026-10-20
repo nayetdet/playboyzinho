@@ -7,19 +7,26 @@
 
 // TFT ILI9341
 #define TFT_CS 10
-#define TFT_DC 9
-#define TFT_RST 8
-#define TFT_MOSI 11
-#define TFT_SCK 12
-#define TFT_MISO 13
+#define TFT_DC 8
+#define TFT_RST 9
+#define TFT_MOSI 18
+#define TFT_SCK 15
+#define TFT_MISO 16
 
-// SD no mesmo barramento SPI da TFT; somente o CS e separado.
-#define SD_CS 14
+// Cartao SD em um controlador SPI independente da tela.
+#define SD_CS 7
+#define SD_MOSI 6
+#define SD_MISO 5
+#define SD_SCK 4
 
 // MAX98357A
-#define I2S_BCLK 5
-#define I2S_LRC 4
-#define I2S_DIN 6
+#define I2S_BCLK 13
+#define I2S_LRC 14
+#define I2S_DIN 12
+#define AMP_SD 11
+
+// SW1 a SW8: pressionar conecta a entrada ao GND (ativo em LOW).
+constexpr uint8_t BUTTON_PINS[] = {42, 41, 40, 38, 39, 48, 21, 47};
 
 // Arquivo rawvideo gerado pelo FFmpeg: RGB565 little-endian, 320x240, 10 FPS.
 constexpr char VIDEO_PATH[] = "/video.rgb565";
@@ -35,19 +42,21 @@ constexpr char AUDIO_PATH[] = "/audio.pcm";
 constexpr uint32_t AUDIO_SAMPLE_RATE = 16000;
 constexpr size_t AUDIO_CHUNK_BYTES = 16384;
 
-Adafruit_ILI9341 tft(TFT_CS, TFT_DC, TFT_RST);
+SPIClass tftSpi(FSPI);  // SPI2 no ESP32-S3.
+SPIClass sdSpi(HSPI);   // SPI3 no ESP32-S3.
+Adafruit_ILI9341 tft(&tftSpi, TFT_DC, TFT_CS, TFT_RST);
 File videoFile;
 File audioFile;
 uint16_t *frameBuffer = nullptr;
 uint8_t *audioData = nullptr;
 size_t audioBytes = 0;
-SemaphoreHandle_t sdMutex = nullptr;
 uint32_t renderedFrames = 0;
 uint32_t nextFrameAt = 0;
 bool playerReady = false;
 volatile bool audioPlaying = false;
 
 void showError(const char *message) {
+  digitalWrite(AMP_SD, LOW);
   Serial.println(message);
   tft.fillScreen(ILI9341_BLACK);
   tft.setTextColor(ILI9341_RED, ILI9341_BLACK);
@@ -64,18 +73,19 @@ bool initDisplayAndSd() {
   pinMode(SD_CS, OUTPUT);
   digitalWrite(SD_CS, HIGH);
 
-  SPI.begin(TFT_SCK, TFT_MISO, TFT_MOSI, TFT_CS);
+  tftSpi.begin(TFT_SCK, TFT_MISO, TFT_MOSI, TFT_CS);
   tft.begin(40000000);
   tft.setRotation(3);
   tft.fillScreen(ILI9341_BLACK);
 
+  sdSpi.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
   bool sdReady = false;
   for (uint8_t attempt = 0; attempt < 3 && !sdReady; ++attempt) {
     delay(250);
-    sdReady = SD.begin(SD_CS, SPI, 40000000);
+    sdReady = SD.begin(SD_CS, sdSpi, 40000000);
     if (!sdReady) {
       SD.end();
-      sdReady = SD.begin(SD_CS, SPI, 20000000);
+      sdReady = SD.begin(SD_CS, sdSpi, 20000000);
     }
     if (!sdReady) SD.end();
   }
@@ -167,7 +177,7 @@ void audioTask(void *) {
 
 void playStartupTone() {
   // Confirma no alto-falante que o I2S/MAX98357A esta funcional antes de
-  // iniciar a leitura do SD. Sao 120 ms de tom de 440 Hz.
+  // iniciar a reproducao. Sao 120 ms de tom de 440 Hz.
   int16_t samples[256 * 2];
   uint32_t phase = 0;
   constexpr uint32_t phaseStep =
@@ -200,6 +210,7 @@ bool initAudio() {
       .tx_desc_auto_clear = true,
       .fixed_mclk = 0};
   const i2s_pin_config_t pins = {
+      .mck_io_num = I2S_PIN_NO_CHANGE,
       .bck_io_num = I2S_BCLK,
       .ws_io_num = I2S_LRC,
       .data_out_num = I2S_DIN,
@@ -211,20 +222,18 @@ bool initAudio() {
     return false;
   }
   i2s_zero_dma_buffer(I2S_NUM_0);
+  // SD/MODE em HIGH habilita o amplificador e seleciona o canal esquerdo.
+  digitalWrite(AMP_SD, HIGH);
   playStartupTone();
   xTaskCreatePinnedToCore(audioTask, "audio", 4096, nullptr, 5, nullptr, 0);
   return true;
 }
 
 bool renderNextFrame() {
-  // SD e TFT compartilham o mesmo SPI. O lock precisa cobrir tambem o envio
-  // para a tela: sem isso a tarefa de audio pode iniciar uma leitura do SD no
-  // meio de um frame, embaralhando a imagem.
-  xSemaphoreTake(sdMutex, portMAX_DELAY);
+  // Apenas esta tarefa acessa o SD; o audio ja esta inteiramente na PSRAM.
   const size_t received = videoFile.readBytes(
       reinterpret_cast<char *>(frameBuffer), FRAME_BYTES);
   if (received != FRAME_BYTES) {
-    xSemaphoreGive(sdMutex);
     return false;
   }
 
@@ -234,18 +243,22 @@ bool renderNextFrame() {
   // envia os bytes na ordem esperada pelo ILI9341.
   tft.writePixels(frameBuffer, FRAME_PIXELS, true, false);
   tft.endWrite();
-  xSemaphoreGive(sdMutex);
   ++renderedFrames;
   return true;
 }
 
 void setup() {
+  pinMode(AMP_SD, OUTPUT);
+  digitalWrite(AMP_SD, LOW);
+  for (uint8_t pin : BUTTON_PINS) {
+    pinMode(pin, INPUT_PULLUP);
+  }
+
   Serial.begin(115200);
   delay(300);
 
   if (!initDisplayAndSd()) return;
-  sdMutex = xSemaphoreCreateMutex();
-  if (!sdMutex || !initAudio()) return;
+  if (!initAudio()) return;
   nextFrameAt = millis();
   audioPlaying = true;
   playerReady = true;
@@ -268,6 +281,7 @@ void loop() {
     Serial.println("Fim de /video.rgb565");
     videoFile.close();
     audioPlaying = false;
+    digitalWrite(AMP_SD, LOW);
     i2s_zero_dma_buffer(I2S_NUM_0);
     playerReady = false;  // Mantem o ultimo frame na tela.
     return;
