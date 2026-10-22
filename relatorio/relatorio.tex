@@ -26,7 +26,7 @@
 \section{Introdução e objetivo}
 O projeto consiste em um console portátil e recarregável destinado à execução de um jogo desenvolvido pela equipe. O ESP32-S3 concentra o processamento: recebe os comandos do usuário, atualiza o estado do jogo, controla a apresentação gráfica e transmite os dados de áudio. A tela apresenta os elementos visuais, enquanto o alto-falante reproduz efeitos sonoros e músicas. O cartão SD oferece armazenamento removível para os recursos utilizados pelo sistema.
 
-A interação ocorre exclusivamente por oito botões físicos. A bateria fornece autonomia em relação à rede elétrica, e o carregador permite a recarga por USB. A chave liga/desliga atua no caminho de alimentação dos circuitos do videogame.
+A entrada dos comandos do jogo ocorre por oito botões físicos. A bateria fornece autonomia em relação à rede elétrica, e o carregador permite a recarga por USB. A chave SW9 atua no caminho de alimentação dos circuitos do videogame, enquanto SW10 habilita ou desliga internamente o amplificador.
 
 \section{Componentes e funções}
 \subsection{ESP32-S3 N16R8}
@@ -36,13 +36,13 @@ Placa de desenvolvimento com módulo ESP32-S3, 16 MB de flash e 8 MB de PSRAM. �
 Módulo de exibição com comunicação SPI, interface de touch e conector para cartão SD. A tela constitui a saída gráfica do console; o touch permanece sem conexão externa.
 
 \subsection{Cartão SD}
-Memória removível para imagens, mapas, músicas e outros arquivos. Utiliza o conector integrado ao módulo da tela e compartilha o barramento SPI com o display.
+Memória removível para imagens, mapas, músicas e outros arquivos. Utiliza o conector integrado ao módulo da tela, com sinais SPI separados dos utilizados pelo display.
 
 \subsection{Amplificador MAX98357}
 Amplificador digital classe D que recebe dados de áudio e fornece o sinal de potência para o alto-falante.
 
 \subsection{Alto-falante}
-Transdutor de 8 $\Omega$ e potência nominal de 1 W. Converte o sinal elétrico amplificado em som.
+Transdutor identificado no esquemático como 8 $\Omega$ e potência nominal de 1 W. Converte o sinal elétrico amplificado em som.
 
 \subsection{Bateria}
 Célula de lítio de 3,7 V nominais e capacidade de 1000 mAh, utilizada como fonte de energia portátil.
@@ -62,10 +62,13 @@ Botões momentâneos conectados individualmente aos GPIOs do ESP32-S3, com retor
 \subsection{SW9}
 Chave SPDT utilizada como liga/desliga, com um contato sem conexão. Interrompe o positivo da alimentação do conversor e do indicador.
 
+\subsection{SW10}
+Chave SPDT que conecta o terminal SD/MODE do MAX98357 a 3,3 V ou ao GND, habilitando ou desligando internamente o amplificador. O controle não utiliza um GPIO do ESP32-S3.
+
 \subsection{Processamento e memória}
 O ESP32-S3 integra processamento e periféricos de comunicação para sistemas embarcados~\cite{s3}. Na variante N16R8, os 16 MB de flash armazenam o programa e dados persistentes, enquanto os 8 MB de PSRAM ampliam a memória de trabalho disponível para recursos como buffers gráficos e de áudio~\cite{wroom}. O cartão SD complementa essas memórias com armazenamento removível.
 
-As conexões externas do ESP32-S3 distribuem-se entre as interfaces SPI e de áudio digital e as entradas dos botões. Os GPIOs 35, 36 e 37 não possuem conexões externas no esquemático, em correspondência com o uso de PSRAM octal no módulo. Os GPIOs 19 e 20, associados à USB nativa do ESP32-S3, também permanecem sem ligação aos periféricos do console~\cite{s3,wroom}.
+As conexões externas do ESP32-S3 distribuem-se entre as interfaces SPI e de áudio digital e as entradas dos botões. Os GPIOs 35, 36 e 37 não possuem conexões externas no esquemático, em correspondência com o uso de PSRAM octal no módulo. Os GPIOs 19 e 20, associados à USB nativa do ESP32-S3, também permanecem sem ligação aos periféricos do console~\cite{s3,wroom}. O GPIO11 permanece sem conexão externa, pois a habilitação do amplificador é realizada por SW10.
 
 \subsection{Arquitetura funcional}
 \begin{center}
@@ -73,11 +76,11 @@ As conexões externas do ESP32-S3 distribuem-se entre as interfaces SPI e de áu
     \begin{minipage}{0.91\linewidth}
       \centering
       Botões $\longrightarrow$ GPIOs $\longrightarrow$ ESP32-S3\\[5pt]
-      ESP32-S3 $\xrightarrow{\mathrm{SPI}}$ TFT e cartão SD\\[5pt]
+      ESP32-S3 $\xrightarrow{\mathrm{SPI\ separado}}$ TFT e cartão SD\\[5pt]
       ESP32-S3 $\xrightarrow{\text{áudio digital}}$ MAX98357 $\longrightarrow$ falante
   \end{minipage}}
 \end{center}
-O sistema reúne entrada, processamento, saída gráfica, saída sonora e armazenamento. O barramento SPI atende ao display e ao cartão SD com seleções independentes. O áudio utiliza sinais próprios, separados do barramento de vídeo e armazenamento.
+O sistema reúne entrada, processamento, saída gráfica, saída sonora e armazenamento. O display e o cartão SD utilizam barramentos SPI separados, cada um com seus sinais de clock, dados e seleção. O áudio utiliza sinais próprios de comunicação digital, e SW10 controla a habilitação do amplificador.
 
 \section{Alimentação e recarga}
 \subsection{Distribuição de energia}
@@ -89,7 +92,7 @@ A alimentação parte da bateria e alcança os demais circuitos por meio dos ter
       USB $\longrightarrow$ TP4056 $\longleftrightarrow$ bateria\\[5pt]
       OUT+ do carregador $\longrightarrow$ SW9 $\longrightarrow$ MT3608\\[5pt]
       MT3608: 5 V $\longrightarrow$ ESP32-S3, TFT e amplificador\\[5pt]
-      Placa ESP32-S3: 3,3 V $\longrightarrow$ terminal LED do TFT
+      Placa ESP32-S3: 3,3 V $\longrightarrow$ LED do TFT e contato 3 de SW10
   \end{minipage}}
 \end{center}
 
@@ -98,7 +101,7 @@ A rede \texttt{+BATT} conecta o positivo da bateria ao terminal B+ do carregador
 As redes B-- e OUT-- são distintas no esquemático. Essa separação é característica da conexão externa de módulos que realizam a proteção pelo caminho negativo da bateria. A função de carregamento pertence ao TP4056; funções de proteção contra descarga excessiva e curto-circuito dependem dos circuitos adicionais presentes no módulo ou na bateria.
 
 \subsection{Chave liga/desliga e indicador}
-O terminal comum 2 de SW9 conecta-se a VIN+ do MT3608 e a BAT+ do indicador de bateria. O contato 3 conecta-se a OUT+ do carregador, enquanto o contato 1 permanece aberto. Uma posição estabelece a alimentação do conversor e do indicador; a outra interrompe esse caminho. O terminal BAT-- do indicador está ligado ao GND.
+O terminal comum 2 de SW9 conecta-se a OUT+ do carregador TP4056, pino 1. O contato 3 conecta-se a VIN+ do MT3608, pino 3, e a BAT+ do indicador de bateria, pino 2, enquanto o contato 1 permanece sem conexão. A ligação entre 2 e 3 alimenta o conversor e o indicador; a posição entre 2 e 1 interrompe esse caminho. O terminal BAT-- do indicador, pino 1, está ligado ao GND.
 
 A chave atua sobre a carga, mantendo a conexão entre bateria e carregador. Dessa forma, a bateria pode ser recarregada com os circuitos do console desligados. O indicador acompanha a tensão disponível antes da elevação para 5 V, fornecendo uma indicação aproximada do nível de carga.
 
@@ -143,24 +146,27 @@ Para um rendimento ilustrativo de 85\% no elevador, a autonomia teórica em hora
 Os valores representam cenários de cálculo, sem medições de consumo do console. A autonomia real depende da capacidade útil da célula, do limite de descarga, da eficiência dos reguladores e do perfil de uso.
 
 \section{Display e armazenamento}
-\subsection{Conexões do barramento SPI}
-O display e o cartão SD compartilham MOSI, MISO e SCK. A linha MOSI transporta dados do ESP32-S3 aos periféricos; MISO transporta os dados de retorno; e SCK fornece o clock de comunicação. Cada dispositivo possui uma linha de seleção própria, conforme o mapeamento a seguir.
+\subsection{Conexões dos barramentos SPI}
+O display e o cartão SD utilizam sinais MOSI, MISO e SCK separados. A linha MOSI transporta dados do ESP32-S3 ao periférico; MISO transporta os dados de retorno; e SCK fornece o clock de comunicação. Cada dispositivo possui sua linha de seleção, conforme o mapeamento a seguir. Os dois conjuntos de terminais pertencem ao módulo U4.
 \begin{longtable}{@{}L{0.22\linewidth}L{0.12\linewidth}L{0.59\linewidth}@{}}
   \toprule
   \textbf{Rede} & \textbf{GPIO} & \textbf{Destino na tela}\\
   \midrule
   \endhead
-  \texttt{MOSI} & 8 & SDI (MOSI), pino 6, e SD\_MOSI, pino 16.\\
-  \texttt{MISO} & 16 & SDO (MISO), pino 9, e SD\_MISO, pino 17.\\
-  \texttt{SCK} & 17 & SCK, pino 7, e SD\_SCK, pino 18.\\
-  \texttt{CS} & 11 & Seleção do TFT, pino 3.\\
-  \texttt{SD\_CS} & 4 & Seleção do cartão SD, pino 15.\\
-  \texttt{DC} & 9 & Seleção comando/dado do TFT, pino 5.\\
-  \texttt{RESET} & 10 & Reset do controlador da tela, pino 4.\\
+  \texttt{TFT\_MOSI} & 18 & SDI (MOSI) do TFT, pino 6.\\
+  \texttt{TFT\_MISO} & 16 & SDO (MISO) do TFT, pino 9.\\
+  \texttt{TFT\_SCK} & 15 & Clock do TFT, pino 7.\\
+  \texttt{TFT\_CS} & 10 & Seleção do TFT, pino 3.\\
+  \texttt{TFT\_DC} & 8 & Seleção comando/dado do TFT, pino 5.\\
+  \texttt{TFT\_RESET} & 9 & Reset do controlador da tela, pino 4.\\
+  \texttt{SD\_MOSI} & 6 & MOSI do cartão SD, pino 16.\\
+  \texttt{SD\_MISO} & 5 & MISO do cartão SD, pino 17.\\
+  \texttt{SD\_SCK} & 4 & Clock do cartão SD, pino 18.\\
+  \texttt{SD\_CS} & 7 & Seleção do cartão SD, pino 15.\\
   \bottomrule
 \end{longtable}
 
-A seleção do TFT ocorre pela rede \texttt{CS}, ligada ao GPIO11, enquanto a seleção do SD utiliza \texttt{SD\_CS}, ligada ao GPIO4. As seleções são ativas em nível baixo. O compartilhamento do retorno MISO corresponde à operação em que o dispositivo não selecionado libera sua saída.
+A seleção do TFT ocorre pela rede \texttt{TFT\_CS}, ligada ao GPIO10, enquanto a seleção do SD utiliza \texttt{SD\_CS}, ligada ao GPIO7. As seleções são ativas em nível baixo. As linhas MISO também são independentes: GPIO16 para o TFT e GPIO5 para o SD.
 
 O sinal DC distingue comandos de dados enviados ao controlador gráfico. RESET controla a reinicialização do display por um GPIO próprio, sem conexão ao reset geral da placa ESP32-S3. A escolha de GPIOs para SPI utiliza os recursos de roteamento dos sinais periféricos do microcontrolador~\cite{s3}.
 
@@ -187,9 +193,23 @@ O áudio é transmitido do ESP32-S3 ao módulo MAX98357 por três sinais: DIN tr
 
 O MAX98357A recebe áudio no formato I\textsuperscript{2}S e não exige clock mestre MCLK. O MAX98357B utiliza o formato justificado à esquerda~\cite{max}. No esquemático, o amplificador recebe 5 V em VIN, pino 7, e sua referência de terra é estabelecida pelo pino 6.
 
-Os terminais GAIN e SD, pinos 4 e 5, não possuem conexões externas. GAIN está associado à configuração de ganho, enquanto SD controla a habilitação e a seleção do canal de áudio. O estado desses terminais depende também dos componentes internos da placa do amplificador~\cite{max}.
+O terminal GAIN, pino 4, permanece sem conexão externa, e sua configuração depende dos componentes presentes no módulo. O terminal SD/MODE, pino 5, pertence à rede \texttt{AMP\_SD}, ligada exclusivamente ao terminal comum 2 de SW10. O GPIO11 não participa dessa rede.
 
-O alto-falante possui impedância nominal de 8 $\Omega$ e potência de 1 W. Sua ligação é prevista diretamente no borne do módulo, com fios fixados por parafusos. O símbolo do amplificador representa os terminais de alimentação e entrada; o borne de saída não está incluído nessa representação.
+\subsection{Chave de áudio SW10}
+\begin{center}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Terminal de SW10} & \textbf{Rede} & \textbf{Destino}\\
+    \midrule
+    1 & GND & Terra comum\\
+    2 (comum) & \texttt{AMP\_SD} & SD/MODE de U7, pino 5\\
+    3 & 3V3 & Saída de 3,3 V de U1, pino 1\\
+    \bottomrule
+  \end{tabular}
+\end{center}
+A ligação entre 2 e 3 aplica 3,3 V ao SD/MODE e habilita o amplificador, selecionando o canal esquerdo. A ligação entre 2 e 1 aplica GND e coloca o amplificador em desligamento interno~\cite{max}. A chave não interrompe o VIN de 5 V; o ESP32-S3 e a tela continuam alimentados. Não há resistor externo nessa ligação. A chave física deve desconectar um contato antes de conectar o outro, e seu terminal comum deve ser identificado conforme o modelo utilizado.
+
+O alto-falante LS1 está identificado no esquemático com impedância nominal de 8 $\Omega$ e potência de 1 W. Sua ligação é prevista diretamente no borne do módulo, com fios fixados por parafusos. Os dois pinos de LS1 estão marcados como sem conexão no desenho, acompanhados dessa indicação de montagem. O símbolo do amplificador representa os terminais de alimentação e entrada; o borne de saída não está incluído nessa representação.
 
 A saída para o falante é diferencial, entre os dois terminais do amplificador~\cite{max}. A relação entre potência, impedância e tensão eficaz diferencial é $P=V_{\mathrm{ef}}^2/R$. Para 1 W em 8 $\Omega$, essa relação corresponde a aproximadamente 2,83 V eficazes em um sinal senoidal.
 
@@ -223,15 +243,15 @@ O projeto utiliza o KiCad para representar as conexões e a disposição física
 
 O arquivo da PCB define uma placa com espessura nominal de 1,6 mm, material dielétrico FR4 e duas camadas de cobre, F.Cu e B.Cu. Os footprints correspondem aos módulos de alimentação, processamento, display, áudio e indicador, além dos botões, da chave e da conexão da bateria. Essa estrutura reúne os subsistemas em uma base de interligação física.
 
-As referências dos componentes relacionam os elementos do esquemático aos seus footprints. Os rótulos de rede identificam conexões como \texttt{MOSI}, \texttt{SCK}, \texttt{DIN} e \texttt{Button-1}, inclusive quando os trechos correspondentes aparecem afastados no desenho. Os símbolos \texttt{PWR\_FLAG} são elementos de documentação elétrica do KiCad associados à indicação de redes alimentadas, sem componente físico correspondente.
+As referências dos componentes relacionam os elementos do esquemático aos seus footprints. Os rótulos de rede identificam conexões como \texttt{TFT\_MOSI}, \texttt{SD\_SCK}, \texttt{AMP\_SD}, \texttt{DIN} e \texttt{Button-1}, inclusive quando os trechos correspondentes aparecem afastados no desenho. Os símbolos \texttt{PWR\_FLAG} são elementos de documentação elétrica do KiCad associados à indicação de redes alimentadas, sem componente físico correspondente.
 
 \section{Funcionamento do console}
 Ao fechar SW9, a alimentação da bateria alcança o conversor elevador e o indicador. O barramento de 5 V alimenta a placa ESP32-S3, a tela e o amplificador. Durante a operação, o processador lê os botões, executa a lógica do jogo, acessa recursos no cartão SD e apresenta as saídas gráficas e sonoras.
 
-A comunicação com a tela e o cartão ocorre por transações no SPI, com seleção individual dos dispositivos. A reprodução de áudio utiliza sua própria interface digital. A abertura de SW9 interrompe a alimentação da carga, enquanto a bateria permanece conectada ao módulo carregador.
+A comunicação com a tela e o cartão ocorre por barramentos SPI separados, com seleção individual dos dispositivos. A reprodução de áudio utiliza sua própria interface digital, enquanto SW10 habilita ou desliga internamente o amplificador por SD/MODE. A abertura de SW9 interrompe a alimentação da carga, enquanto a bateria permanece conectada ao módulo carregador.
 
 \section{Conclusão}
-O videogame portátil integra processamento, controles físicos, vídeo, armazenamento e áudio em uma plataforma baseada no ESP32-S3 N16R8. A alimentação por bateria, o carregador TP4056 e o conversor MT3608 compõem o subsistema de energia. O compartilhamento do SPI entre display e SD e a utilização de sinais separados para áudio organizam a comunicação dos periféricos, enquanto oito GPIOs atendem aos botões. O esquemático e o layout desenvolvidos no KiCad documentam as conexões e a integração física dos componentes do console.
+O videogame portátil integra processamento, controles físicos, vídeo, armazenamento e áudio em uma plataforma baseada no ESP32-S3 N16R8. A alimentação por bateria, o carregador TP4056 e o conversor MT3608 compõem o subsistema de energia. Os barramentos SPI separados para display e SD e os sinais próprios de áudio organizam a comunicação dos periféricos, enquanto oito GPIOs atendem aos botões. SW9 controla a alimentação geral da carga, e SW10 controla a habilitação do amplificador. O esquemático e o layout desenvolvidos no KiCad documentam as conexões e a integração física dos componentes do console.
 
 \begin{thebibliography}{9}
   \bibitem{s3} Espressif Systems. \textit{ESP32-S3 Series Datasheet}. Pinagem, níveis elétricos e periféricos. \url{https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf}.

@@ -1,14 +1,24 @@
 #include <Arduino.h>
 
+// 1 testa apenas o amplificador e a SW10, sem tela ou botoes.
+// Coloque em 0 para voltar aos modos anteriores.
+#define AUDIO_ONLY_TEST 0
+// No teste de audio: 0 = bipes gerados pelo ESP; 1 = /audio.pcm do SD.
+#define AUDIO_TEST_USE_SD 0
+
 // Testes temporarios: tela tem prioridade. Ambos em 0 restauram o player.
 #define BUTTON_SCREEN_TEST 0
 #define LED_GPIO_TEST 0
 
 // Volume do player e do tom inicial: 0 = silencio, 100 = volume original.
 // Altere esta porcentagem e grave o firmware novamente na placa.
-constexpr int AUDIO_VOLUME_PERCENT = 20;
+constexpr int AUDIO_VOLUME_PERCENT = 10;
 static_assert(AUDIO_VOLUME_PERCENT >= 0 && AUDIO_VOLUME_PERCENT <= 100,
               "O volume deve estar entre 0 e 100 por cento.");
+
+#if AUDIO_ONLY_TEST
+#include "audio_only_test.h"
+#else
 
 #include <SPI.h>
 #include <Adafruit_GFX.h>
@@ -161,6 +171,7 @@ void loop() {
 #include <driver/i2s.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+#include <freertos/queue.h>
 
 // Cartao SD em um controlador SPI independente da tela.
 #define SD_CS 7
@@ -200,11 +211,17 @@ size_t audioBytes = 0;
 uint32_t renderedFrames = 0;
 uint32_t nextFrameAt = 0;
 bool playerReady = false;
+bool playbackEnded = false;
 bool playbackPaused = false;
 bool audioMuted = false;
+// Guarda o ultimo SW acionado (1 a 8); 0 significa nenhum aperto ainda.
+uint8_t lastPressedButton = 0;
 // Protege o estado do audio e o I2S, compartilhados entre os dois nucleos.
 SemaphoreHandle_t audioMutex = nullptr;
 bool audioPlaying = false;
+size_t audioOffset = 0;  // Acessado somente com audioMutex adquirido.
+QueueHandle_t buttonPressQueue = nullptr;
+constexpr uint32_t BUTTON_POLL_INTERVAL_MS = 5;
 
 int16_t scaleAudioSample(int16_t sample) {
   // Multiplica em 32 bits para evitar overflow das amostras PCM de 16 bits.
@@ -216,9 +233,58 @@ void updateAmplifier() {
   digitalWrite(AMP_SD, playerReady && !playbackPaused && !audioMuted ? HIGH : LOW);
 }
 
+void drawButtonOverlay() {
+  if (lastPressedButton == 0) return;
+  // Numero amarelo sobre fundo preto no canto superior direito (320x240).
+  constexpr int16_t badgeX = SCREEN_WIDTH - 26;
+  tft.fillRect(badgeX, 4, 22, 24, ILI9341_BLACK);
+  tft.setTextSize(2);
+  tft.setTextColor(ILI9341_YELLOW, ILI9341_BLACK);
+  tft.setCursor(badgeX + 5, 8);
+  tft.print(lastPressedButton);
+}
+
+bool restartPlayback() {
+  // Reutiliza os buffers e a tarefa de audio; reabre somente o arquivo de video.
+  videoFile = SD.open(VIDEO_PATH, FILE_READ);
+  if (!videoFile || videoFile.size() == 0 || videoFile.size() % FRAME_BYTES != 0) {
+    videoFile.close();
+    Serial.println("Falha ao reabrir o video. Aperte um botao para tentar novamente.");
+    return false;
+  }
+
+  xSemaphoreTake(audioMutex, portMAX_DELAY);
+  audioOffset = 0;
+  i2s_zero_dma_buffer(I2S_NUM_0);
+  if (i2s_start(I2S_NUM_0) != ESP_OK) {
+    xSemaphoreGive(audioMutex);
+    videoFile.close();
+    Serial.println("Falha ao reiniciar I2S. Aperte um botao para tentar novamente.");
+    return false;
+  }
+  renderedFrames = 0;
+  playbackPaused = false;
+  playbackEnded = false;
+  nextFrameAt = millis();
+  audioPlaying = true;
+  playerReady = true;
+  updateAmplifier();
+  xSemaphoreGive(audioMutex);
+  Serial.println("Video e audio reiniciados do comeco.");
+  return true;
+}
+
 void handleButtonPress(size_t index) {
+  lastPressedButton = static_cast<uint8_t>(index + 1);
+  // Atualiza imediatamente, inclusive durante a pausa e no ultimo frame.
+  if (playerReady || renderedFrames > 0) drawButtonOverlay();
   Serial.printf("SW%u (GPIO%u) pressionado: ",
                 static_cast<unsigned>(index + 1), BUTTON_PINS[index]);
+  if (playbackEnded) {
+    // Este aperto apenas reinicia: nao pausa nem altera o mute em seguida.
+    restartPlayback();
+    return;
+  }
   if (!playerReady) {
     Serial.println("player indisponivel ou video encerrado.");
     return;
@@ -248,8 +314,43 @@ void handleButtonPress(size_t index) {
 }
 
 void handleButtonStateChange(size_t index, bool pressed) {
-  // Uma acao por aperto; soltar o botao apenas rearma a deteccao.
-  if (pressed) handleButtonPress(index);
+  // Esta funcao roda na tarefa de entrada: nao acessa tela, SD ou player.
+  if (pressed) {
+    const uint8_t buttonIndex = static_cast<uint8_t>(index);
+    if (xQueueSend(buttonPressQueue, &buttonIndex, 0) != pdPASS) {
+      Serial.println("Fila de botoes cheia: aperto descartado.");
+    }
+  }
+}
+
+void buttonInputTask(void *) {
+  for (;;) {
+    pollButtons();
+    vTaskDelay(pdMS_TO_TICKS(BUTTON_POLL_INTERVAL_MS));
+  }
+}
+
+bool startButtonInput() {
+  buttonPressQueue = xQueueCreate(32, sizeof(uint8_t));
+  if (!buttonPressQueue) return false;
+  // Leitura no nucleo 0, independente do desenho do video no loop().
+  // O audio continua com prioridade maior (5).
+  if (xTaskCreatePinnedToCore(buttonInputTask, "buttons", 2048, nullptr, 2,
+                              nullptr, 0) != pdPASS) {
+    vQueueDelete(buttonPressQueue);
+    buttonPressQueue = nullptr;
+    return false;
+  }
+  return true;
+}
+
+void processButtonPresses() {
+  if (!buttonPressQueue) return;
+  uint8_t index;
+  while (xQueueReceive(buttonPressQueue, &index, 0) == pdPASS) {
+    // Acoes e desenho permanecem no mesmo contexto que o video.
+    handleButtonPress(index);
+  }
 }
 
 void showError(const char *message) {
@@ -296,7 +397,7 @@ bool initDisplayAndSd() {
     showError("Nao achei /video.rgb565");
     return false;
   }
-  if (videoFile.size() % FRAME_BYTES != 0) {
+  if (videoFile.size() == 0 || videoFile.size() % FRAME_BYTES != 0) {
     showError("Video com tamanho invalido");
     videoFile.close();
     return false;
@@ -370,7 +471,6 @@ bool initDisplayAndSd() {
 
 void audioTask(void *) {
   // PCM estéreo, 16-bit little-endian, inteiramente residente na PSRAM.
-  size_t offset = 0;
   for (;;) {
     xSemaphoreTake(audioMutex, portMAX_DELAY);
     if (!audioPlaying) {
@@ -379,12 +479,12 @@ void audioTask(void *) {
       continue;
     }
 
-    const size_t bytesToWrite = min(AUDIO_CHUNK_BYTES, audioBytes - offset);
+    const size_t bytesToWrite = min(AUDIO_CHUNK_BYTES, audioBytes - audioOffset);
     size_t written = 0;
-    i2s_write(I2S_NUM_0, audioData + offset, bytesToWrite, &written,
+    i2s_write(I2S_NUM_0, audioData + audioOffset, bytesToWrite, &written,
               portMAX_DELAY);
-    offset += written;
-    if (offset >= audioBytes) offset = 0;
+    audioOffset += written;
+    if (audioOffset >= audioBytes) audioOffset = 0;
     xSemaphoreGive(audioMutex);
     vTaskDelay(1);
   }
@@ -470,6 +570,8 @@ bool renderNextFrame() {
   // envia os bytes na ordem esperada pelo ILI9341.
   tft.writePixels(frameBuffer, FRAME_PIXELS, true, false);
   tft.endWrite();
+  // O frame ocupa toda a tela; repoe a identificacao a cada desenho.
+  drawButtonOverlay();
   ++renderedFrames;
   return true;
 }
@@ -486,6 +588,10 @@ void setup() {
 
   if (!initDisplayAndSd()) return;
   if (!initAudio()) return;
+  if (!startButtonInput()) {
+    showError("Falha ao iniciar leitura dos botoes");
+    return;
+  }
   xSemaphoreTake(audioMutex, portMAX_DELAY);
   nextFrameAt = millis();
   audioPlaying = true;
@@ -495,11 +601,12 @@ void setup() {
   xSemaphoreGive(audioMutex);
   Serial.println("Reproducao raw iniciada com audio PCM.");
   Serial.println("SW1-SW4: pausar/retomar. SW5-SW8: desativar/ativar som.");
+  Serial.println("No fim do video, qualquer botao reinicia a reproducao.");
 }
 
 void loop() {
-  // Continua lendo e registrando botoes durante pausa, erro e fim do video.
-  pollButtons();
+  // Os apertos sao capturados em paralelo, inclusive enquanto um frame e enviado.
+  processButtonPresses();
   if (!playerReady || playbackPaused) {
     delay(1);
     return;
@@ -512,7 +619,9 @@ void loop() {
   }
 
   if (!renderNextFrame()) {
-    Serial.println("Fim de /video.rgb565");
+    playbackEnded = videoFile.position() >= videoFile.size();
+    Serial.println(playbackEnded ? "Fim do video. Aperte qualquer botao para reiniciar."
+                                 : "Falha ao ler o video.");
     videoFile.close();
     xSemaphoreTake(audioMutex, portMAX_DELAY);
     audioPlaying = false;
@@ -537,3 +646,5 @@ void loop() {
 }
 
 #endif  // BUTTON_SCREEN_TEST / LED_GPIO_TEST
+
+#endif  // AUDIO_ONLY_TEST
