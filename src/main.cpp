@@ -1,9 +1,18 @@
+#include <Arduino.h>
+
+// Testes temporarios: tela tem prioridade. Ambos em 0 restauram o player.
+#define BUTTON_SCREEN_TEST 0
+#define LED_GPIO_TEST 0
+
+// Volume do player e do tom inicial: 0 = silencio, 100 = volume original.
+// Altere esta porcentagem e grave o firmware novamente na placa.
+constexpr int AUDIO_VOLUME_PERCENT = 20;
+static_assert(AUDIO_VOLUME_PERCENT >= 0 && AUDIO_VOLUME_PERCENT <= 100,
+              "O volume deve estar entre 0 e 100 por cento.");
+
 #include <SPI.h>
-#include <SD.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
-#include <esp_heap_caps.h>
-#include <driver/i2s.h>
 
 // TFT ILI9341
 #define TFT_CS 10
@@ -12,6 +21,146 @@
 #define TFT_MOSI 18
 #define TFT_SCK 15
 #define TFT_MISO 16
+
+// SW1 a SW8: pressionar conecta a entrada ao GND (ativo em LOW).
+constexpr uint8_t BUTTON_PINS[] = {2, 42, 41, 39, 40, 38, 21, 47};
+constexpr size_t BUTTON_COUNT = sizeof(BUTTON_PINS) / sizeof(BUTTON_PINS[0]);
+constexpr uint32_t BUTTON_DEBOUNCE_MS = 30;
+struct ButtonState {
+  bool lastReading = HIGH;
+  bool stableState = HIGH;
+  uint32_t changedAt = 0;
+};
+ButtonState buttons[BUTTON_COUNT];
+
+void handleButtonStateChange(size_t index, bool pressed);
+
+void pollButtons() {
+  const uint32_t now = millis();
+  for (size_t index = 0; index < BUTTON_COUNT; ++index) {
+    ButtonState &button = buttons[index];
+    const bool reading = digitalRead(BUTTON_PINS[index]);
+    if (reading != button.lastReading) {
+      button.lastReading = reading;
+      button.changedAt = now;
+    }
+    if (reading != button.stableState &&
+        now - button.changedAt >= BUTTON_DEBOUNCE_MS) {
+      button.stableState = reading;
+      handleButtonStateChange(index, reading == LOW);
+    }
+  }
+}
+
+#if BUTTON_SCREEN_TEST
+
+SPIClass tftSpi(FSPI);
+Adafruit_ILI9341 tft(&tftSpi, TFT_DC, TFT_CS, TFT_RST);
+uint32_t buttonPressCounts[BUTTON_COUNT] = {};
+
+void drawButtonRow(size_t index) {
+  const bool pressed = buttons[index].stableState == LOW;
+  const uint16_t background = pressed ? ILI9341_GREEN : ILI9341_BLACK;
+  const int16_t y = 47 + index * 18;
+  tft.fillRect(6, y, 308, 16, background);
+  tft.setTextSize(1);
+  tft.setTextColor(pressed ? ILI9341_BLACK : ILI9341_WHITE, background);
+  tft.setCursor(10, y + 4);
+  tft.printf("SW%u  GPIO%-2u  %-11s  apertos: %lu",
+             static_cast<unsigned>(index + 1),
+             static_cast<unsigned>(BUTTON_PINS[index]),
+             pressed ? "PRESSIONADO" : "SOLTO",
+             static_cast<unsigned long>(buttonPressCounts[index]));
+}
+
+void handleButtonStateChange(size_t index, bool pressed) {
+  if (pressed) {
+    ++buttonPressCounts[index];
+    // Mantem o ultimo botao identificado mesmo depois de soltar o jumper.
+    tft.fillRect(6, 212, 308, 24, ILI9341_BLACK);
+    tft.setCursor(10, 214);
+    tft.setTextSize(2);
+    tft.setTextColor(ILI9341_YELLOW, ILI9341_BLACK);
+    tft.printf("SW%u / GPIO%u", static_cast<unsigned>(index + 1),
+               static_cast<unsigned>(BUTTON_PINS[index]));
+  }
+  drawButtonRow(index);
+  Serial.printf("SW%u (GPIO%u): %s | apertos: %lu\n",
+                static_cast<unsigned>(index + 1),
+                static_cast<unsigned>(BUTTON_PINS[index]),
+                pressed ? "PRESSIONADO" : "SOLTO",
+                static_cast<unsigned long>(buttonPressCounts[index]));
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(11, OUTPUT);  // Amplificador desligado.
+  digitalWrite(11, LOW);
+  pinMode(7, OUTPUT);   // Cartao SD desmarcado; nao e utilizado neste teste.
+  digitalWrite(7, HIGH);
+  for (uint8_t pin : BUTTON_PINS) pinMode(pin, INPUT_PULLUP);
+
+  tftSpi.begin(TFT_SCK, TFT_MISO, TFT_MOSI, TFT_CS);
+  tft.begin(40000000);
+  tft.setRotation(3);
+  tft.fillScreen(ILI9341_BLACK);
+  tft.setTextWrap(false);
+  tft.setTextColor(ILI9341_WHITE);
+  tft.setTextSize(2);
+  tft.setCursor(10, 6);
+  tft.println("TESTE DOS BOTOES");
+  tft.setTextSize(1);
+  tft.setCursor(10, 30);
+  tft.println("Ligue um GPIO ao GND para testar.");
+  for (size_t index = 0; index < BUTTON_COUNT; ++index) drawButtonRow(index);
+  tft.setCursor(10, 198);
+  tft.println("Ultimo botao pressionado:");
+  Serial.println("Teste de botoes na tela: conecte cada entrada ao GND.");
+}
+
+void loop() {
+  pollButtons();
+  delay(1);
+}
+
+#elif LED_GPIO_TEST
+#include <esp32-hal-rgb-led.h>
+
+constexpr uint8_t TEST_LED_PIN = 48;
+void handleButtonStateChange(size_t, bool) {}
+
+void setup() {
+  Serial.begin(115200);
+  // Mantem o amplificador desligado durante o teste.
+  pinMode(11, OUTPUT);
+  digitalWrite(11, LOW);
+  delay(500);
+  Serial.println("Teste do LED RGB no GPIO48.");
+  neopixelWrite(TEST_LED_PIN, 0, 0, 0);
+}
+
+void loop() {
+  Serial.println("GPIO48: vermelho");
+  neopixelWrite(TEST_LED_PIN, 32, 0, 0);
+  delay(700);
+  Serial.println("GPIO48: verde");
+  neopixelWrite(TEST_LED_PIN, 0, 32, 0);
+  delay(700);
+  Serial.println("GPIO48: azul");
+  neopixelWrite(TEST_LED_PIN, 0, 0, 32);
+  delay(700);
+  Serial.println("GPIO48: apagado");
+  neopixelWrite(TEST_LED_PIN, 0, 0, 0);
+  delay(700);
+}
+
+#else
+
+#include <SD.h>
+#include <esp_heap_caps.h>
+#include <driver/i2s.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 // Cartao SD em um controlador SPI independente da tela.
 #define SD_CS 7
@@ -25,9 +174,6 @@
 #define I2S_DIN 12
 #define AMP_SD 11
 
-// SW1 a SW8: pressionar conecta a entrada ao GND (ativo em LOW).
-constexpr uint8_t BUTTON_PINS[] = {42, 41, 40, 38, 39, 48, 21, 47};
-
 // Arquivo rawvideo gerado pelo FFmpeg: RGB565 little-endian, 320x240, 10 FPS.
 constexpr char VIDEO_PATH[] = "/video.rgb565";
 constexpr uint16_t SCREEN_WIDTH = 320;
@@ -40,7 +186,8 @@ constexpr char AUDIO_PATH[] = "/audio.pcm";
 // 16 kHz estéreo cabe integralmente na PSRAM de 8 MB. Isso remove qualquer
 // leitura do SD durante a reprodução de áudio.
 constexpr uint32_t AUDIO_SAMPLE_RATE = 16000;
-constexpr size_t AUDIO_CHUNK_BYTES = 16384;
+// Escritas curtas limitam o tempo de espera do controle de pausa pelo mutex.
+constexpr size_t AUDIO_CHUNK_BYTES = 1024;
 
 SPIClass tftSpi(FSPI);  // SPI2 no ESP32-S3.
 SPIClass sdSpi(HSPI);   // SPI3 no ESP32-S3.
@@ -53,7 +200,57 @@ size_t audioBytes = 0;
 uint32_t renderedFrames = 0;
 uint32_t nextFrameAt = 0;
 bool playerReady = false;
-volatile bool audioPlaying = false;
+bool playbackPaused = false;
+bool audioMuted = false;
+// Protege o estado do audio e o I2S, compartilhados entre os dois nucleos.
+SemaphoreHandle_t audioMutex = nullptr;
+bool audioPlaying = false;
+
+int16_t scaleAudioSample(int16_t sample) {
+  // Multiplica em 32 bits para evitar overflow das amostras PCM de 16 bits.
+  return static_cast<int16_t>(static_cast<int32_t>(sample) *
+                              AUDIO_VOLUME_PERCENT / 100);
+}
+
+void updateAmplifier() {
+  digitalWrite(AMP_SD, playerReady && !playbackPaused && !audioMuted ? HIGH : LOW);
+}
+
+void handleButtonPress(size_t index) {
+  Serial.printf("SW%u (GPIO%u) pressionado: ",
+                static_cast<unsigned>(index + 1), BUTTON_PINS[index]);
+  if (!playerReady) {
+    Serial.println("player indisponivel ou video encerrado.");
+    return;
+  }
+
+  if (index < 4) {
+    xSemaphoreTake(audioMutex, portMAX_DELAY);
+    playbackPaused = !playbackPaused;
+    audioPlaying = !playbackPaused;
+    if (playbackPaused) {
+      updateAmplifier();
+      // Conserva os buffers DMA e a posicao do audio durante a pausa.
+      i2s_stop(I2S_NUM_0);
+    } else {
+      i2s_start(I2S_NUM_0);
+      nextFrameAt = millis();
+      updateAmplifier();
+    }
+    xSemaphoreGive(audioMutex);
+    Serial.println(playbackPaused ? "video e audio pausados." : "reproducao retomada.");
+  } else {
+    audioMuted = !audioMuted;
+    // O I2S continua avancando enquanto o amplificador esta silenciado.
+    updateAmplifier();
+    Serial.println(audioMuted ? "som desativado." : "som ativado.");
+  }
+}
+
+void handleButtonStateChange(size_t index, bool pressed) {
+  // Uma acao por aperto; soltar o botao apenas rearma a deteccao.
+  if (pressed) handleButtonPress(index);
+}
 
 void showError(const char *message) {
   digitalWrite(AMP_SD, LOW);
@@ -128,6 +325,12 @@ bool initDisplayAndSd() {
     audioFile.close();
     return false;
   }
+  if (audioBytes % (2 * sizeof(int16_t)) != 0) {
+    showError("PCM estereo com tamanho invalido");
+    videoFile.close();
+    audioFile.close();
+    return false;
+  }
   audioData = static_cast<uint8_t *>(
       heap_caps_malloc(audioBytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
   if (!audioData) {
@@ -151,6 +354,14 @@ bool initDisplayAndSd() {
   }
   audioFile.close();
 
+  // Ajusta uma unica vez na PSRAM, sem custo extra durante a reproducao
+  // e sem reduzir o volume novamente quando o audio reinicia.
+  int16_t *samples = reinterpret_cast<int16_t *>(audioData);
+  for (size_t i = 0; i < audioBytes / sizeof(int16_t); ++i) {
+    samples[i] = scaleAudioSample(samples[i]);
+  }
+  Serial.printf("Volume: %d%%\n", AUDIO_VOLUME_PERCENT);
+
   Serial.printf("Abrindo %s: %lu frames (%lu bytes).\n", VIDEO_PATH,
                 static_cast<unsigned long>(videoFile.size() / FRAME_BYTES),
                 static_cast<unsigned long>(videoFile.size()));
@@ -161,8 +372,10 @@ void audioTask(void *) {
   // PCM estéreo, 16-bit little-endian, inteiramente residente na PSRAM.
   size_t offset = 0;
   for (;;) {
+    xSemaphoreTake(audioMutex, portMAX_DELAY);
     if (!audioPlaying) {
-      vTaskDelay(pdMS_TO_TICKS(20));
+      xSemaphoreGive(audioMutex);
+      vTaskDelay(pdMS_TO_TICKS(5));
       continue;
     }
 
@@ -172,6 +385,8 @@ void audioTask(void *) {
               portMAX_DELAY);
     offset += written;
     if (offset >= audioBytes) offset = 0;
+    xSemaphoreGive(audioMutex);
+    vTaskDelay(1);
   }
 }
 
@@ -186,7 +401,8 @@ void playStartupTone() {
   for (uint8_t block = 0; block < 11; ++block) {
     for (size_t i = 0; i < 256; ++i) {
       phase += phaseStep;
-      const int16_t sample = (phase & 0x80000000UL) ? 3500 : -3500;
+      const int16_t sample = scaleAudioSample(
+          (phase & 0x80000000UL) ? 3500 : -3500);
       samples[i * 2] = sample;
       samples[i * 2 + 1] = sample;
     }
@@ -225,7 +441,18 @@ bool initAudio() {
   // SD/MODE em HIGH habilita o amplificador e seleciona o canal esquerdo.
   digitalWrite(AMP_SD, HIGH);
   playStartupTone();
-  xTaskCreatePinnedToCore(audioTask, "audio", 4096, nullptr, 5, nullptr, 0);
+  digitalWrite(AMP_SD, LOW);
+  i2s_stop(I2S_NUM_0);
+  i2s_zero_dma_buffer(I2S_NUM_0);
+  audioMutex = xSemaphoreCreateMutex();
+  if (!audioMutex) {
+    showError("Falha ao criar mutex de audio");
+    return false;
+  }
+  if (xTaskCreatePinnedToCore(audioTask, "audio", 4096, nullptr, 5, nullptr, 0) != pdPASS) {
+    showError("Falha ao criar tarefa de audio");
+    return false;
+  }
   return true;
 }
 
@@ -259,15 +486,22 @@ void setup() {
 
   if (!initDisplayAndSd()) return;
   if (!initAudio()) return;
+  xSemaphoreTake(audioMutex, portMAX_DELAY);
   nextFrameAt = millis();
   audioPlaying = true;
   playerReady = true;
+  i2s_start(I2S_NUM_0);
+  updateAmplifier();
+  xSemaphoreGive(audioMutex);
   Serial.println("Reproducao raw iniciada com audio PCM.");
+  Serial.println("SW1-SW4: pausar/retomar. SW5-SW8: desativar/ativar som.");
 }
 
 void loop() {
-  if (!playerReady) {
-    delay(100);
+  // Continua lendo e registrando botoes durante pausa, erro e fim do video.
+  pollButtons();
+  if (!playerReady || playbackPaused) {
+    delay(1);
     return;
   }
 
@@ -280,10 +514,13 @@ void loop() {
   if (!renderNextFrame()) {
     Serial.println("Fim de /video.rgb565");
     videoFile.close();
+    xSemaphoreTake(audioMutex, portMAX_DELAY);
     audioPlaying = false;
     digitalWrite(AMP_SD, LOW);
+    i2s_stop(I2S_NUM_0);
     i2s_zero_dma_buffer(I2S_NUM_0);
     playerReady = false;  // Mantem o ultimo frame na tela.
+    xSemaphoreGive(audioMutex);
     return;
   }
 
@@ -298,3 +535,5 @@ void loop() {
                   static_cast<unsigned long>(renderedFrames));
   }
 }
+
+#endif  // BUTTON_SCREEN_TEST / LED_GPIO_TEST

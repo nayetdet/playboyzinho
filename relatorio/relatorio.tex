@@ -200,17 +200,19 @@ Cada botão conecta um GPIO ao GND quando pressionado. O uso de sinais individua
     \toprule
     \textbf{Botão} & \textbf{Rede} & \textbf{GPIO} & \textbf{Outro terminal}\\
     \midrule
-    SW1 & Button-1 & 42 & GND\\
-    SW2 & Button-2 & 41 & GND\\
-    SW3 & Button-3 & 40 & GND\\
-    SW4 & Button-4 & 38 & GND\\
-    SW5 & Button-5 & 39 & GND\\
-    SW6 & Button-6 & 48 & GND\\
+    SW1 & Button-1 & 2 & GND\\
+    SW2 & Button-2 & 42 & GND\\
+    SW3 & Button-3 & 41 & GND\\
+    SW4 & Button-4 & 39 & GND\\
+    SW5 & Button-5 & 40 & GND\\
+    SW6 & Button-6 & 38 & GND\\
     SW7 & Button-7 & 21 & GND\\
     SW8 & Button-8 & 47 & GND\\
     \bottomrule
   \end{tabular}
 \end{center}
+
+O GPIO48 está ligado ao LED RGB integrado à placa de desenvolvimento, conforme confirmado por teste de alternância entre vermelho, verde, azul e apagado. Esse pino permanece sem conexão externa no projeto. A distribuição dos botões foi reorganizada para liberar o GPIO48 e acompanhar a sequência das trilhas na PCB.
 
 A lógica de leitura é ativa em nível baixo: com entrada polarizada por \textit{pull-up}, o botão solto corresponde ao nível 1 e o botão pressionado corresponde ao nível 0. O esquema não apresenta resistores externos de polarização para os botões; o ESP32-S3 dispõe de \textit{pull-ups} internos configuráveis~\cite{s3}.
 

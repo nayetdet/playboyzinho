@@ -20,14 +20,15 @@ Referência: `kicad/playboyzinho.kicad_sch`. A tabela abaixo descreve as conexõ
 | GPIO12 | DIN | MAX98357 - DIN |
 | GPIO13 | BCLK | MAX98357 - BCLK |
 | GPIO14 | LRC | MAX98357 - LRC |
-| GPIO42 | Button-1 | Botão SW1 |
-| GPIO41 | Button-2 | Botão SW2 |
-| GPIO40 | Button-3 | Botão SW3 |
-| GPIO39 | Button-5 | Botão SW5 |
-| GPIO38 | Button-4 | Botão SW4 |
-| GPIO48 | Button-6 | Botão SW6 |
-| GPIO47 | Button-8 | Botão SW8 |
+| GPIO2 | Button-1 | Botão SW1 |
+| GPIO42 | Button-2 | Botão SW2 |
+| GPIO41 | Button-3 | Botão SW3 |
+| GPIO39 | Button-4 | Botão SW4 |
+| GPIO40 | Button-5 | Botão SW5 |
+| GPIO38 | Button-6 | Botão SW6 |
 | GPIO21 | Button-7 | Botão SW7 |
+| GPIO47 | Button-8 | Botão SW8 |
+| GPIO48 | LED RGB integrado | Conexão interna da placa, confirmada por teste; sem conexão externa no projeto |
 | GPIO35, GPIO36 e GPIO37 | Reservados à PSRAM | Sem conexão externa no projeto |
 | 3V3 | 3V3 | Terminal LED da tela |
 | 5V | +5V | Alimentação da placa pela saída do MT3608 |
